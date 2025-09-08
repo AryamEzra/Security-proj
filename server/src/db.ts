@@ -1,4 +1,3 @@
-
 import { Database } from 'bun:sqlite';
 import { sha256 } from './crypto';
 import type { User, SessionFamily, Session, Event } from './types';
@@ -6,85 +5,81 @@ import { hashPassword, verifyPassword } from './password';
 
 export const db = new Database('data.db');
 
+// Simplified schema creation
 db.exec(`
-PRAGMA journal_mode = WAL;
-CREATE TABLE IF NOT EXISTS users (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  username TEXT UNIQUE NOT NULL,
-  password_hash TEXT NOT NULL,
-  created_at TEXT NOT NULL
-);
+  CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    created_at TEXT NOT NULL
+  );
 
-CREATE TABLE IF NOT EXISTS session_families (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id INTEGER NOT NULL,
-  created_at TEXT NOT NULL,
-  compromised_at TEXT,
-  FOREIGN KEY(user_id) REFERENCES users(id)
-);
+  CREATE TABLE IF NOT EXISTS session_families (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    created_at TEXT NOT NULL,
+    compromised_at TEXT,
+    FOREIGN KEY(user_id) REFERENCES users(id)
+  );
 
-CREATE TABLE IF NOT EXISTS sessions (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  family_id INTEGER NOT NULL,
-  user_id INTEGER NOT NULL,
-  access_jti TEXT NOT NULL,
-  access_expires_at TEXT NOT NULL,
-  refresh_lookup_hash TEXT NOT NULL UNIQUE,
-  refresh_hash TEXT NOT NULL,
-  refresh_expires_at TEXT NOT NULL,
-  user_agent_hash TEXT,
-  ip_hash TEXT,
-  created_at TEXT NOT NULL,
-  revoked_at TEXT,
-  FOREIGN KEY(family_id) REFERENCES session_families(id),
-  FOREIGN KEY(user_id) REFERENCES users(id)
-);
+  CREATE TABLE IF NOT EXISTS sessions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    family_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    access_jti TEXT NOT NULL,
+    access_expires_at TEXT NOT NULL,
+    refresh_lookup_hash TEXT NOT NULL UNIQUE,
+    refresh_hash TEXT NOT NULL,
+    refresh_expires_at TEXT NOT NULL,
+    user_agent_hash TEXT,
+    ip_hash TEXT,
+    created_at TEXT NOT NULL,
+    revoked_at TEXT,
+    FOREIGN KEY(family_id) REFERENCES session_families(id),
+    FOREIGN KEY(user_id) REFERENCES users(id)
+  );
 
-CREATE TABLE IF NOT EXISTS events (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  type TEXT NOT NULL,
-  user_id INTEGER,
-  session_id INTEGER,
-  message TEXT NOT NULL,
-  created_at TEXT NOT NULL,
-  FOREIGN KEY(user_id) REFERENCES users(id),
-  FOREIGN KEY(session_id) REFERENCES sessions(id)
-);
+  CREATE TABLE IF NOT EXISTS events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    type TEXT NOT NULL,
+    user_id INTEGER,
+    session_id INTEGER,
+    message TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY(user_id) REFERENCES users(id),
+    FOREIGN KEY(session_id) REFERENCES sessions(id)
+  );
 `);
 
 export function nowISO() { return new Date().toISOString(); }
 
 export async function seedUser() {
-  // First, check if user exists and needs rehashing
+  // Check if user exists
   const user = db
     .query('SELECT id, username, password_hash as passwordHash, created_at as createdAt FROM users WHERE username=?')
     .get('alice') as any;
   
   if (!user) {
-    // Create new user with current algorithm
+    // Create new user
     const hash = await hashPassword('Password123!');
-    db.query('INSERT INTO users (username, password_hash, created_at) VALUES (?,?,?)')
-      .run('alice', hash, nowISO());
-    console.log('User "alice" created with new password hash');
+    db.query('INSERT INTO users (username, email, password_hash, created_at) VALUES (?,?,?,?)')
+      .run('alice', 'alice@example.com', hash, nowISO());
+    console.log('User "alice" created');
   } else {
-    // Check if password needs rehashing (old algorithm)
+    // Verify and rehash if needed
     try {
-      // Try to verify with current algorithm
       const isValid = await verifyPassword('Password123!', user.passwordHash);
       
       if (!isValid) {
-        console.log('Password verification failed - rehashing password...');
-        // Rehash with current algorithm
+        console.log('Rehashing password...');
         const newHash = await hashPassword('Password123!');
         db.query('UPDATE users SET password_hash = ? WHERE username = ?')
           .run(newHash, 'alice');
-        console.log('Password rehashed with current algorithm');
-      } else {
-        console.log('Password is already using current algorithm');
+        console.log('Password rehashed');
       }
     } catch (error) {
-      // If verification throws UnsupportedAlgorithm, rehash
-      console.log('Unsupported algorithm detected - rehashing password...');
+      console.log('Rehashing password due to algorithm change...');
       const newHash = await hashPassword('Password123!');
       db.query('UPDATE users SET password_hash = ? WHERE username = ?')
         .run(newHash, 'alice');
@@ -137,8 +132,19 @@ export function createSession(params: {
 }
 
 export function updateSessionRefresh(sessionId: number, lookupHash: string, refreshHash: string, refreshExpiresAtISO: string) {
-  db.query('UPDATE sessions SET refresh_lookup_hash=?, refresh_hash=?, refresh_expires_at=? WHERE id=?')
-    .run(lookupHash, refreshHash, refreshExpiresAtISO, sessionId);
+  try {
+    console.log("Updating session refresh - Session ID:", sessionId);
+    
+    const result = db.query(
+      'UPDATE sessions SET refresh_lookup_hash=?, refresh_hash=?, refresh_expires_at=? WHERE id=?'
+    ).run(lookupHash, refreshHash, refreshExpiresAtISO, sessionId);
+    
+    console.log("Update result:", result);
+    
+  } catch (error) {
+    console.error("Error updating session refresh:", error);
+    throw error;
+  }
 }
 
 export function revokeSession(sessionId: number) {
@@ -151,7 +157,26 @@ export function findUserByUsername(username: string) {
 }
 
 export function findSessionByRefreshLookup(lookupHash: string) {
-  return db.query('SELECT * FROM sessions WHERE refresh_lookup_hash=?').get(lookupHash) as Session | undefined;
+  const session = db.query(`
+    SELECT 
+      id, 
+      family_id as familyId, 
+      user_id as userId, 
+      access_jti as accessJti, 
+      access_expires_at as accessExpiresAt, 
+      refresh_lookup_hash as refreshLookupHash, 
+      refresh_hash as refreshHash, 
+      refresh_expires_at as refreshExpiresAt, 
+      user_agent_hash as userAgentHash, 
+      ip_hash as ipHash, 
+      created_at as createdAt, 
+      revoked_at as revokedAt 
+    FROM sessions 
+    WHERE refresh_lookup_hash = ?
+  `).get(lookupHash) as Session | undefined;
+  
+  console.log("Session found by lookup:", session);
+  return session;
 }
 
 export function getFamilySessions(familyId: number) {

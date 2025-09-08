@@ -23,7 +23,7 @@ export default function LoginPage() {
       setMessage("Login successful!");
       
       // Redirect to admin after successful login
-      setTimeout(() => router.push('/admin'), 1000);
+      // setTimeout(() => router.push('/admin'), 1000);
     } catch (error: any) {
       setMessage(`Login failed: ${error.response?.data?.error || error.message}`);
     }

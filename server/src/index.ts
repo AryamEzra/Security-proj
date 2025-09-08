@@ -4,10 +4,14 @@ import {
   getActiveSessionsForUser, createFamily, createSession, 
   findSessionByRefreshLookup, getEvents, 
   insertEvent, markFamilyCompromised, revokeFamily, updateSessionRefresh, 
-  revokeSession, seedUser, hashUserAgentIP 
+  revokeSession, seedUser, hashUserAgentIP, 
+  db,
+  nowISO,
+  findUserByUsername
 } from './db';
 import { generateRefreshToken, verifyRefreshToken, sha256, signAccessToken, verifyAccessToken } from './crypto';
 import { rateLimit } from './rateLimit';
+import { hashPassword, verifyPassword } from './password';
 
 const app = new Hono();
 
@@ -34,11 +38,16 @@ const loginLimiter = rateLimit({ capacity: 10, refillPerSec: 0.2 });
 
 // Authentication helper
 async function authenticateUser(username: string, password: string) {
-  // Simple authentication - replace with your actual user lookup
-  if (username === 'alice' && password === 'Password123!') {
-    return { id: 1, username: 'alice' };
+  const user = findUserByUsername(username);
+  if (!user) return null;
+
+  try {
+    const isValid = await verifyPassword(password, user.passwordHash);
+    return isValid ? user : null;
+  } catch (error) {
+    console.error("Password verification error:", error);
+    return null;
   }
-  return null;
 }
 
 // Routes
@@ -121,55 +130,94 @@ app.post('/login', async (c) => {
 
 app.post('/refresh', async (c) => {
   try {
+    console.log("=== REFRESH ENDPOINT CALLED ===");
+    
     const body = await readJson(c.req.raw);
     const { refreshToken } = body;
     
     if (!refreshToken) {
+      console.log("No refresh token provided");
       return c.json({ error: 'Missing refreshToken' }, 400);
     }
 
+    console.log("Refresh token received (first 10 chars):", refreshToken.substring(0, 10) + "...");
+    
     const { ua, ip } = getClientInfo(c.req.raw);
+    console.log("Client info - UA:", ua.substring(0, 30) + "...", "IP:", ip);
+    
+    // Create lookup hash
     const lookup = await sha256(refreshToken);
+    console.log("Lookup hash:", lookup);
+    
+    // Find session by refresh token hash
     const session = findSessionByRefreshLookup(lookup);
     
-    // Validate session
-    if (!session || session.revokedAt) {
-      insertEvent('TOKEN_REUSE_DETECTED', null, null, 'Unknown or revoked refresh token used');
+    if (!session) {
+      console.log("No session found for this refresh token");
+      insertEvent('TOKEN_REUSE_DETECTED', null, null, 'Unknown refresh token used');
       return c.json({ error: 'Invalid refresh token' }, 401);
     }
 
-    // Verify refresh token
+    if (session.revokedAt) {
+      console.log("Session has been revoked:", session.revokedAt);
+      insertEvent('TOKEN_REUSE_DETECTED', session.userId, session.id, 'Revoked refresh token used');
+      return c.json({ error: 'Refresh token revoked' }, 401);
+    }
+
+    console.log("Session found - ID:", session.id, "User ID:", session.userId);
+    
+    // Verify the refresh token cryptographically
+    console.log("Verifying refresh token...");
     const valid = await verifyRefreshToken(refreshToken, session.refreshHash);
+    
     if (!valid) {
+      console.log("Refresh token verification FAILED");
       insertEvent('TOKEN_REUSE_DETECTED', session.userId, session.id, 'Refresh token verification failed');
       return c.json({ error: 'Invalid refresh token' }, 401);
     }
 
-    // Token binding check
+    console.log("Refresh token verified successfully");
+    
+    // Token binding check (UA+IP binding)
+    console.log("Checking token binding...");
     const currentBindHash = await hashUserAgentIP(ua, ip);
+    console.log("Current bind hash:", currentBindHash);
+    console.log("Stored bind hash:", session.userAgentHash);
+    
     if (session.userAgentHash && session.userAgentHash !== currentBindHash) {
+      console.log("TOKEN REUSE DETECTED! Binding mismatch");
       markFamilyCompromised(session.familyId);
       revokeFamily(session.familyId);
       insertEvent('TOKEN_REUSE_DETECTED', session.userId, session.id, 'Binding mismatch, family revoked');
       return c.json({ error: 'Token reuse detected. Family revoked.' }, 401);
     }
 
-    // Rotate tokens
-    const accessTTL = 60 * 5;
-    const refreshTTL = 60 * 60 * 24 * 7;
+    console.log("Token binding check passed");
     
+    // Rotate tokens (issue new ones)
+    console.log("Rotating tokens...");
+    const accessTTL = 60 * 5; // 5 minutes
+    const refreshTTL = 60 * 60 * 24 * 7; // 7 days
+    
+    // Generate new access token
     const { token: accessToken, jti } = await signAccessToken(
       { sub: String(session.userId) }, 
       accessTTL
     );
     
+    // Generate new refresh token
     const newRefresh = await generateRefreshToken();
     const accessExpISO = new Date(Date.now() + accessTTL * 1000).toISOString();
     const refreshExpISO = new Date(Date.now() + refreshTTL * 1000).toISOString();
 
+    console.log("Updating session with new refresh token...");
+    
+    // Update session with new refresh token
     updateSessionRefresh(session.id, newRefresh.lookupHash, newRefresh.atRestHash, refreshExpISO);
     insertEvent('REFRESH', session.userId, session.id, 'Refresh token rotated');
 
+    console.log("Token rotation completed successfully");
+    
     return c.json({
       accessToken,
       accessExpiresAt: accessExpISO,
@@ -179,7 +227,10 @@ app.post('/refresh', async (c) => {
     });
 
   } catch (error) {
-    console.error("Refresh error:", error);
+    console.error("REFRESH ENDPOINT ERROR:", error);
+    if (error instanceof Error) {
+      console.error("Error stack:", error.stack);
+    }
     return c.json({ error: 'Internal server error' }, 500);
   }
 });
@@ -261,6 +312,52 @@ app.get('/users', (c) => {
 app.get('/stats', (c) => {
   // This would need proper database query implementation
   return c.json({ LOGIN_SUCCESS: 5, LOGIN_FAILED: 2, REFRESH: 3 });
+});
+
+app.post('/signup', async (c) => {
+  try {
+    const body = await readJson(c.req.raw);
+    const { username, email, password } = body;
+    
+    if (!username || !email || !password) {
+      return c.json({ error: 'Missing required fields' }, 400);
+    }
+
+    // Check if user exists
+    const existingUser = db.query('SELECT id FROM users WHERE username = ? OR email = ?')
+      .get(username, email) as any;
+    
+    if (existingUser) {
+      return c.json({ error: 'User already exists' }, 409);
+    }
+
+    // Hash password
+    const hash = await hashPassword(password);
+    
+    // Create user
+    db.query('INSERT INTO users (username, email, password_hash, created_at) VALUES (?,?,?,?)')
+      .run(username, email, hash, nowISO());
+    
+    insertEvent('USER_SIGNUP', null, null, `New user registered: ${username}`);
+    
+    return c.json({ success: true, message: 'User created successfully' });
+    
+  } catch (error) {
+    console.error("Signup error:", error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// Add this to your index.ts for debugging
+app.post('/debug-sessions', async (c) => {
+  try {
+    const sessions = db.query('SELECT * FROM sessions ORDER BY created_at DESC').all();
+    console.log("All sessions:", sessions);
+    return c.json(sessions);
+  } catch (error) {
+    console.error("Debug error:", error);
+    return c.json({ error: 'Debug failed' }, 500);
+  }
 });
 
 // Initialize and start server

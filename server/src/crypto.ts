@@ -69,20 +69,31 @@ export async function generateRefreshToken(): Promise<RefreshTokenBundle> {
   return { token: rawB64, lookupHash, atRestHash };
 }
 
-export async function verifyRefreshToken(raw: string, atRestHash: string): Promise<boolean> {
-  return Bun.password.verify(raw, atRestHash);
+export async function verifyRefreshToken(raw: string, atRestHash: string | undefined): Promise<boolean> {
+  try {
+    console.log("Verifying refresh token...");    
+    console.log("Raw token:", raw.substring(0, 10) + "...");
+    
+    if (!atRestHash) {
+      console.error("No atRestHash provided - cannot verify token");
+      return false;
+    }
+    
+    console.log("Stored hash:", atRestHash.substring(0, 20) + "...");
+    
+    // Bun.password.verify should work with argon2id hashes
+    const isValid = await Bun.password.verify(raw, atRestHash);
+    console.log("Verification result:", isValid);
+    
+    return isValid;
+  } catch (error) {
+    console.error("Error in verifyRefreshToken:", error);
+    return false;
+  }
 }
 
 export async function sha256(input: string) {
   const buf = new TextEncoder().encode(input);
   const hash = await crypto.subtle.digest('SHA-256', buf);
   return Buffer.from(hash).toString('hex');
-}
-
-export async function hashUserAgentIP(ua: string | null, ip: string | null) {
-  const u = ua ?? '';
-  const i = ip ?? '';
-  const combo = u + '|' + i;
-  const h = await sha256(combo);
-  return h;
 }

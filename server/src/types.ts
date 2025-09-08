@@ -1,4 +1,3 @@
-
 export type User = {
   id: number;
   username: string;
@@ -19,8 +18,8 @@ export type Session = {
   userId: number;
   accessJti: string;
   accessExpiresAt: string;
-  refreshLookupHash: string; // sha256(token) for lookup
-  refreshHash: string;       // argon2id hash for at-rest secrecy
+  refreshLookupHash: string;
+  refreshHash: string;  // This was missing!
   refreshExpiresAt: string;
   userAgentHash: string | null;
   ipHash: string | null;
