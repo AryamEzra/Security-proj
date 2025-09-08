@@ -78,3 +78,11 @@ export async function sha256(input: string) {
   const hash = await crypto.subtle.digest('SHA-256', buf);
   return Buffer.from(hash).toString('hex');
 }
+
+export async function hashUserAgentIP(ua: string | null, ip: string | null) {
+  const u = ua ?? '';
+  const i = ip ?? '';
+  const combo = u + '|' + i;
+  const h = await sha256(combo);
+  return h;
+}

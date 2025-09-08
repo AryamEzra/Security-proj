@@ -2,6 +2,7 @@
 import { Database } from 'bun:sqlite';
 import { sha256 } from './crypto';
 import type { User, SessionFamily, Session, Event } from './types';
+import { hashPassword, verifyPassword } from './password';
 
 export const db = new Database('data.db');
 
@@ -54,13 +55,41 @@ CREATE TABLE IF NOT EXISTS events (
 export function nowISO() { return new Date().toISOString(); }
 
 export async function seedUser() {
+  // First, check if user exists and needs rehashing
   const user = db
     .query('SELECT id, username, password_hash as passwordHash, created_at as createdAt FROM users WHERE username=?')
     .get('alice') as any;
+  
   if (!user) {
-    const hash = await Bun.password.hash('Password123!', { algorithm: 'argon2id', timeCost: 2, memoryCost: 19456 });
+    // Create new user with current algorithm
+    const hash = await hashPassword('Password123!');
     db.query('INSERT INTO users (username, password_hash, created_at) VALUES (?,?,?)')
       .run('alice', hash, nowISO());
+    console.log('User "alice" created with new password hash');
+  } else {
+    // Check if password needs rehashing (old algorithm)
+    try {
+      // Try to verify with current algorithm
+      const isValid = await verifyPassword('Password123!', user.passwordHash);
+      
+      if (!isValid) {
+        console.log('Password verification failed - rehashing password...');
+        // Rehash with current algorithm
+        const newHash = await hashPassword('Password123!');
+        db.query('UPDATE users SET password_hash = ? WHERE username = ?')
+          .run(newHash, 'alice');
+        console.log('Password rehashed with current algorithm');
+      } else {
+        console.log('Password is already using current algorithm');
+      }
+    } catch (error) {
+      // If verification throws UnsupportedAlgorithm, rehash
+      console.log('Unsupported algorithm detected - rehashing password...');
+      const newHash = await hashPassword('Password123!');
+      db.query('UPDATE users SET password_hash = ? WHERE username = ?')
+        .run(newHash, 'alice');
+      console.log('Password rehashed with current algorithm');
+    }
   }
 }
 
