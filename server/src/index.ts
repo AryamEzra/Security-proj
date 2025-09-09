@@ -37,8 +37,14 @@ function getClientInfo(req: Request) {
 const loginLimiter = rateLimit({ capacity: 10, refillPerSec: 0.2 });
 
 // Authentication helper
-async function authenticateUser(username: string, password: string) {
-  const user = findUserByUsername(username);
+async function authenticateUser(identifier: string, password: string) {
+  // Check by username OR email
+  const user = db.query(`
+    SELECT id, username, password_hash as passwordHash 
+    FROM users 
+    WHERE username = ? OR email = ?
+  `).get(identifier, identifier) as any;
+
   if (!user) return null;
 
   try {
@@ -305,13 +311,41 @@ app.post('/me', async (c) => {
 });
 
 app.get('/users', (c) => {
-  // This would need proper database query implementation
-  return c.json([{ id: 1, username: 'alice', created_at: new Date().toISOString() }]);
+  try {
+    // Query all users from the database
+    const users = db.query(`
+      SELECT id, username, email, created_at 
+      FROM users 
+      ORDER BY created_at DESC
+    `).all();
+    
+    return c.json(users);
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    return c.json({ error: 'Failed to fetch users' }, 500);
+  }
 });
 
 app.get('/stats', (c) => {
-  // This would need proper database query implementation
-  return c.json({ LOGIN_SUCCESS: 5, LOGIN_FAILED: 2, REFRESH: 3 });
+  try {
+    // Get actual stats from events table
+    const stats = db.query(`
+      SELECT type, COUNT(*) as count 
+      FROM events 
+      GROUP BY type
+    `).all();
+    
+    // Convert to object format
+    const statsObj: Record<string, number> = {};
+    stats.forEach((stat: any) => {
+      statsObj[stat.type] = stat.count;
+    });
+    
+    return c.json(statsObj);
+  } catch (error) {
+    console.error("Error fetching stats:", error);
+    return c.json({ error: 'Failed to fetch stats' }, 500);
+  }
 });
 
 app.post('/signup', async (c) => {
@@ -328,17 +362,19 @@ app.post('/signup', async (c) => {
       .get(username, email) as any;
     
     if (existingUser) {
-      return c.json({ error: 'User already exists' }, 409);
+      return c.json({ error: 'User already exists.' }, 409);
     }
 
     // Hash password
     const hash = await hashPassword(password);
     
     // Create user
-    db.query('INSERT INTO users (username, email, password_hash, created_at) VALUES (?,?,?,?)')
+    const result = db.query('INSERT INTO users (username, email, password_hash, created_at) VALUES (?,?,?,?)')
       .run(username, email, hash, nowISO());
-    
-    insertEvent('USER_SIGNUP', null, null, `New user registered: ${username}`);
+
+    const userId = db.query('SELECT last_insert_rowid() as id').get() as any;
+
+    insertEvent('USER_SIGNUP', userId.id, null, `New user registered: ${username}`);
     
     return c.json({ success: true, message: 'User created successfully' });
     

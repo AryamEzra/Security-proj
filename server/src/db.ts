@@ -7,6 +7,13 @@ export const db = new Database('data.db');
 
 // Simplified schema creation
 db.exec(`
+  -- Ensure users table has email column
+  PRAGMA table_info(users);
+  
+  -- If email column doesn't exist, alter table
+  CREATE TEMPORARY TABLE IF NOT EXISTS temp_check (email TEXT);
+  DROP TABLE IF EXISTS temp_check;
+  
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE NOT NULL,

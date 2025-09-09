@@ -5,8 +5,8 @@ import { useDashboardStore } from "../../../store/dashboard";
 import { login, me, refresh } from "../../lib/api";
 
 export default function LoginPage() {
-  const [username, setUsername] = useState("alice");
-  const [password, setPassword] = useState("Password123!");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [refreshToken, setRefreshToken] = useState<string | null>(null);
   const [message, setMessage] = useState("");
