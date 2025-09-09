@@ -12,6 +12,7 @@ import {
 import { generateRefreshToken, verifyRefreshToken, sha256, signAccessToken, verifyAccessToken } from './crypto';
 import { rateLimit } from './rateLimit';
 import { hashPassword, verifyPassword } from './password';
+import { getGeoLocation } from './geolocation';
 
 const app = new Hono();
 
@@ -63,6 +64,9 @@ app.post('/login', async (c) => {
   try {
     const { ua, ip } = getClientInfo(c.req.raw);
     const clientKey = ip;
+    
+    // Get geolocation data
+    const geoData = await getGeoLocation(ip);
     
     // Rate limiting
     if (!loginLimiter(clientKey)) {
@@ -116,7 +120,19 @@ app.post('/login', async (c) => {
       ipHash: bindHash
     });
 
-    insertEvent('LOGIN_SUCCESS', user.id, sessionId, `Session created (family ${familyId})`);
+    // insertEvent('LOGIN_SUCCESS', user.id, sessionId, `Session created (family ${familyId})`);
+
+    insertEvent(
+      'LOGIN_SUCCESS', 
+      user.id, 
+      sessionId, 
+      `Session created for ${user.username}`,
+      ip,
+      geoData.country_code,
+      geoData.country,
+      geoData.city,
+      geoData.org
+    );
 
     return c.json({
       accessToken,

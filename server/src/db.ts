@@ -13,7 +13,7 @@ db.exec(`
   -- If email column doesn't exist, alter table
   CREATE TEMPORARY TABLE IF NOT EXISTS temp_check (email TEXT);
   DROP TABLE IF EXISTS temp_check;
-  
+
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE NOT NULL,
@@ -57,6 +57,12 @@ db.exec(`
     FOREIGN KEY(user_id) REFERENCES users(id),
     FOREIGN KEY(session_id) REFERENCES sessions(id)
   );
+
+  ALTER TABLE events ADD COLUMN ip_address TEXT;
+  ALTER TABLE events ADD COLUMN country_code TEXT;
+  ALTER TABLE events ADD COLUMN country_name TEXT;
+  ALTER TABLE events ADD COLUMN city TEXT;
+  ALTER TABLE events ADD COLUMN isp TEXT
 `);
 
 export function nowISO() { return new Date().toISOString(); }
@@ -95,9 +101,36 @@ export async function seedUser() {
   }
 }
 
-export function insertEvent(type: string, userId: number | null, sessionId: number | null, message: string) {
-  db.query('INSERT INTO events (type, user_id, session_id, message, created_at) VALUES (?,?,?,?,?)')
-    .run(type, userId, sessionId, message, nowISO());
+// export function insertEvent(type: string, userId: number | null, sessionId: number | null, message: string) {
+//   db.query('INSERT INTO events (type, user_id, session_id, message, created_at) VALUES (?,?,?,?,?)')
+//     .run(type, userId, sessionId, message, nowISO());
+// }
+
+export function insertEvent(
+  type: string, 
+  userId: number | null, 
+  sessionId: number | null, 
+  message: string,
+  ip?: string,
+  countryCode?: string,
+  countryName?: string,
+  city?: string,
+  isp?: string
+) {
+  db.query(
+    'INSERT INTO events (type, user_id, session_id, message, ip_address, country_code, country_name, city, isp, created_at) VALUES (?,?,?,?,?,?,?,?,?,?)'
+  ).run(
+    type,
+    userId,
+    sessionId,
+    message,
+    ip ?? null,
+    countryCode ?? null,
+    countryName ?? null,
+    city ?? null,
+    isp ?? null,
+    nowISO()
+  );
 }
 
 export function createFamily(userId: number): number {

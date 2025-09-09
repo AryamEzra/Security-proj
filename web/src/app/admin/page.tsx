@@ -5,6 +5,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line 
 } from 'recharts';
+import GeoMap from "@/src/components/GeoMap";
 
 // Color palette that matches your dark/light theme
 const CHART_COLORS = {
@@ -164,6 +165,8 @@ export default function AdminPage() {
             Auto-refreshing every 5 seconds
           </div>
         </div>
+
+        <GeoMap events={events} />
 
         {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
