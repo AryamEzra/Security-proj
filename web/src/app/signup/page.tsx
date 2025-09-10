@@ -1,12 +1,9 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { api } from "@/src/lib/api";
 
 import Link from "next/link";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/src/components/ui/card";
-import { Label } from "@radix-ui/react-label";
-import { Input } from "@/src/components/ui/input";
-import { Button } from "@/src/components/ui/button";
 
 export default function SignUpPage() {
   const [email, setEmail] = useState("");
@@ -28,36 +25,36 @@ export default function SignUpPage() {
     return true;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setLoading(true);
+  setError("");
 
-    if (!validateEmail(email)) {
-      setError("Please enter a valid email address (e.g. user@gmail.com or another valid domain).");
-      setLoading(false);
-      return;
+  if (!validateEmail(email)) {
+    setError("Please enter a valid email address (e.g. user@gmail.com or another valid domain).");
+    setLoading(false);
+    return;
+  }
+
+  try {
+    // Use your API instance instead of direct fetch
+    const response = await api.post("/signup", { 
+      email, 
+      username, 
+      password 
+    });
+
+    if (response.status === 200) {
+      router.push("/login?message=signup_success");
+    } else {
+      setError(response.data.error || "Signup failed");
     }
-
-    try {
-      const response = await fetch("http://localhost:4000/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, username, password }),
-      });
-
-      if (response.ok) {
-        router.push("/login?message=signup_success");
-      } else {
-        const data = await response.json();
-        setError(data.error || "Signup failed");
-      }
-    } catch (err) {
-      setError("Network error. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  } catch (err: any) {
+    setError(err.response?.data?.error || "Network error. Please try again.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="max-w-md mx-auto card">

@@ -64,7 +64,7 @@ export default function LoginPage() {
       await refresh();
       
       // Second refresh with the same old token should trigger reuse detection
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/refresh`, {
+      const response = await fetch("/api/refresh", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refreshToken })

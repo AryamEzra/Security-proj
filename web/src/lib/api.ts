@@ -5,7 +5,7 @@ import axios from "axios";
 //   headers: { "Content-Type": "application/json" }
 // });
 
-const api = axios.create({
+export const api = axios.create({
   baseURL: '/api', // Use the proxy path instead of full URL
   headers: { "Content-Type": "application/json" }
 });
