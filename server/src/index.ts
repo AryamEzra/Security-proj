@@ -19,8 +19,13 @@ const app = new Hono();
 // Middleware
 // app.use('*', cors({ origin: '*', allowHeaders: ['Content-Type', 'Authorization'] }));
 app.use(cors({
-  origin: ["http://localhost:3000"], // allow your Next.js dev frontend
-  credentials: true
+  origin: [
+    "http://localhost:3000", 
+    "https://security-proj.onrender.com" 
+  ],
+  credentials: true,
+  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Helpers
