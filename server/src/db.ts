@@ -197,6 +197,8 @@ export function findUserByUsername(username: string) {
 }
 
 export function findSessionByRefreshLookup(lookupHash: string) {
+  console.log("Looking for session with hash:", lookupHash);
+  
   const session = db.query(`
     SELECT 
       id, 
@@ -215,7 +217,7 @@ export function findSessionByRefreshLookup(lookupHash: string) {
     WHERE refresh_lookup_hash = ?
   `).get(lookupHash) as Session | undefined;
   
-  console.log("Session found by lookup:", session);
+  console.log("Session found:", session ? session.id : 'None');
   return session;
 }
 

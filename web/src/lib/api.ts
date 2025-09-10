@@ -19,21 +19,24 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Add response interceptor to handle token refresh
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
     
+    // ONLY retry if it's a 401 AND we have a refresh token
     if (error.response?.status === 401 && !originalRequest._retry) {
+      const refreshToken = localStorage.getItem('refreshToken');
+      
+      // If no refresh token, don't retry
+      if (!refreshToken) {
+        return Promise.reject(error);
+      }
+      
       originalRequest._retry = true;
       
       try {
-        const refreshToken = localStorage.getItem('refreshToken');
-        if (!refreshToken) {
-          throw new Error('No refresh token available');
-        }
-        
         const response = await api.post("/refresh", { refreshToken });
         
         localStorage.setItem('accessToken', response.data.accessToken);
