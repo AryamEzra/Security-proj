@@ -75,7 +75,22 @@ app.post('/login', async (c) => {
     const clientKey = ip;
     
     // Get geolocation data
-    const geoData = await getGeoLocation(ip);
+    let geoData;
+    try {
+      geoData = await getGeoLocation(ip);
+    } catch (geoError) {
+      console.warn('Geolocation failed:', geoError);
+      geoData = {
+        ip,
+        country: 'Unknown',
+        country_code: 'XX',
+        city: 'Unknown',
+        region: 'Unknown',
+        timezone: 'UTC',
+        org: 'Unknown',
+        asn: 'AS0000'
+      };
+    }
     
     // Rate limiting
     if (!loginLimiter(clientKey)) {

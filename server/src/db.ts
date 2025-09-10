@@ -53,6 +53,11 @@ db.exec(`
     user_id INTEGER,
     session_id INTEGER,
     message TEXT NOT NULL,
+    ip_address TEXT,           -- ADD THIS
+    country_code TEXT,         -- ADD THIS
+    country_name TEXT,         -- ADD THIS
+    city TEXT,                 -- ADD THIS
+    isp TEXT,                  -- ADD THIS
     created_at TEXT NOT NULL,
     FOREIGN KEY(user_id) REFERENCES users(id),
     FOREIGN KEY(session_id) REFERENCES sessions(id)

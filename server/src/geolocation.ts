@@ -20,11 +20,11 @@ export async function getGeoLocation(ip: string): Promise<GeoLocationData> {
   if (isPrivateIP(ip)) {
     return {
       ip,
-      country: 'Ethiopia',
-      country_code: 'ET',
-      city: 'Local Network',
+      country: 'Local Network',
+      country_code: 'LN',
+      city: 'Local',
       region: 'Local',
-      timezone: 'Africa/Addis_Ababa',
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       org: 'Private Network',
       asn: 'AS0000'
     };
@@ -36,23 +36,28 @@ export async function getGeoLocation(ip: string): Promise<GeoLocationData> {
   }
 
   try {
-    const response = await fetch(`${IPAPI_BASE_URL}/${ip}/json/`);
+    // Use a more reliable geolocation service with better free tier
+    const response = await fetch(`http://ip-api.com/json/${ip}?fields=status,message,country,countryCode,city,region,timezone,org,as,query`);
     
     if (!response.ok) {
-      throw new Error(`IPAPI responded with status ${response.status}`);
+      throw new Error(`Geolocation API responded with status ${response.status}`);
     }
 
     const data = await response.json();
     
+    if (data.status === 'fail') {
+      throw new Error(data.message);
+    }
+
     const geoData: GeoLocationData = {
-      ip: data.ip,
-      country: data.country_name,
-      country_code: data.country_code,
-      city: data.city,
-      region: data.region,
-      timezone: data.timezone,
-      org: data.org,
-      asn: data.asn
+      ip: data.query || ip,
+      country: data.country || 'Unknown',
+      country_code: data.countryCode || 'XX',
+      city: data.city || 'Unknown',
+      region: data.region || 'Unknown',
+      timezone: data.timezone || 'UTC',
+      org: data.org || 'Unknown',
+      asn: data.as || 'AS0000'
     };
 
     // Cache the result
@@ -60,7 +65,7 @@ export async function getGeoLocation(ip: string): Promise<GeoLocationData> {
     
     return geoData;
   } catch (error) {
-    console.error('Geolocation API error:', error);
+    console.warn('Geolocation API failed, using fallback data:', error);
     
     // Fallback data
     return {
