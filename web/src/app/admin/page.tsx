@@ -149,8 +149,11 @@ export default function AdminPage() {
     );
   };
 
+  // Detect dark mode
+  const isDarkMode = typeof window !== 'undefined' && document.documentElement.classList.contains('dark');
+
   return (
-    <div className="min-h-screen p-6">
+    <div className={`min-h-screen p-6 ${isDarkMode ? 'bg-gray-900' : ''}`}>
       <div className="max-w-7xl mx-auto space-y-6">
         {message && (
           <div className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 p-4 rounded-lg">
@@ -166,7 +169,7 @@ export default function AdminPage() {
           </div>
         </div>
 
-        <GeoMap events={events} />
+        <GeoMap events={events} isDarkMode={isDarkMode} />
 
         {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -269,7 +272,7 @@ export default function AdminPage() {
             <div className="card">
               <h3 className="text-lg font-semibold mb-4">Recent Security Events</h3>
               <div className="space-y-3 max-h-96 overflow-y-auto">
-                {events.slice(0, 10).map((event) => (
+                {events.slice(0, 20).map((event) => (
                   <div key={event.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
                     <div className="flex justify-between items-center">
                       <span className={`text-sm font-medium ${

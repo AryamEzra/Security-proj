@@ -17,7 +17,11 @@ import { getGeoLocation } from './geolocation';
 const app = new Hono();
 
 // Middleware
-app.use('*', cors({ origin: '*', allowHeaders: ['Content-Type', 'Authorization'] }));
+// app.use('*', cors({ origin: '*', allowHeaders: ['Content-Type', 'Authorization'] }));
+app.use(cors({
+  origin: ["http://localhost:3000"], // allow your Next.js dev frontend
+  credentials: true
+}));
 
 // Helpers
 async function readJson(req: Request) {

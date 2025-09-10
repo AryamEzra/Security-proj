@@ -58,11 +58,6 @@ db.exec(`
     FOREIGN KEY(session_id) REFERENCES sessions(id)
   );
 
-  ALTER TABLE events ADD COLUMN ip_address TEXT;
-  ALTER TABLE events ADD COLUMN country_code TEXT;
-  ALTER TABLE events ADD COLUMN country_name TEXT;
-  ALTER TABLE events ADD COLUMN city TEXT;
-  ALTER TABLE events ADD COLUMN isp TEXT
 `);
 
 export function nowISO() { return new Date().toISOString(); }

@@ -27,6 +27,7 @@ interface GeoEvent {
 
 interface GeoMapProps {
   events?: any[];
+  isDarkMode?: boolean;
 }
 
 // Simple country to coordinates mapping (for demo purposes)
@@ -51,7 +52,7 @@ const countryCoordinates: Record<string, [number, number]> = {
   TR: [38.9637, 35.2433],  // Turkey
 };
 
-export default function GeoMap({ events = [] }: GeoMapProps) {
+export default function GeoMap({ events = [], isDarkMode = false }: GeoMapProps) {
   const [geoEvents, setGeoEvents] = useState<GeoEvent[]>([]);
   const [countryCounts, setCountryCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
@@ -97,10 +98,17 @@ export default function GeoMap({ events = [] }: GeoMapProps) {
   }, [events]);
 
   const getColorForCount = (count: number) => {
-    if (count > 10) return '#ef4444';    // red
-    if (count > 5) return '#f59e0b';     // amber
-    if (count > 2) return '#10b981';     // green
-    return '#3b82f6';                    // blue
+    if (isDarkMode) {
+      if (count > 10) return '#f87171';    // lighter red
+      if (count > 5) return '#fbbf24';     // lighter amber
+      if (count > 2) return '#34d399';     // lighter green
+      return '#60a5fa';                    // lighter blue
+    } else {
+      if (count > 10) return '#ef4444';    // red
+      if (count > 5) return '#f59e0b';     // amber
+      if (count > 2) return '#10b981';     // green
+      return '#3b82f6';                    // blue
+    }
   };
 
   const topCountries = Object.entries(countryCounts)
@@ -109,25 +117,48 @@ export default function GeoMap({ events = [] }: GeoMapProps) {
 
   if (loading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div className={
+        isDarkMode
+          ? "bg-gray-800 rounded-lg shadow p-6"
+          : "bg-white rounded-lg shadow p-6"
+      }>
         <div className="animate-pulse">
-          <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded w-1/3 mb-4"></div>
-          <div className="h-64 bg-gray-300 dark:bg-gray-600 rounded"></div>
+          <div className={
+            isDarkMode
+              ? "h-6 bg-gray-600 rounded w-1/3 mb-4"
+              : "h-6 bg-gray-300 rounded w-1/3 mb-4"
+          }></div>
+          <div className={
+            isDarkMode
+              ? "h-64 bg-gray-600 rounded"
+              : "h-64 bg-gray-300 rounded"
+          }></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-      <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
+    <div className={
+      isDarkMode
+        ? "bg-gray-800 rounded-lg shadow p-6"
+        : "bg-white rounded-lg shadow p-6"
+    }>
+      <h3 className={
+        isDarkMode
+          ? "text-lg font-semibold mb-4 text-white"
+          : "text-lg font-semibold mb-4 text-gray-900"
+      }>
         🌍 Login Geographic Distribution
       </h3>
-      
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* World Map */}
         <div>
-          <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-700 h-96">
+          <div className={
+            isDarkMode
+              ? "border border-gray-700 rounded-lg p-4 bg-gray-700 h-96"
+              : "border border-gray-200 rounded-lg p-4 bg-gray-50 h-96"
+          }>
             <ComposableMap
               projection="geoMercator"
               projectionConfig={{
@@ -141,17 +172,16 @@ export default function GeoMap({ events = [] }: GeoMapProps) {
                     geographies.map((geo) => {
                       const countryCode = geo.properties.iso_a2;
                       const count = countryCounts[countryCode] || 0;
-                      
                       return (
                         <Geography
                           key={geo.rsmKey}
                           geography={geo}
-                          fill={count > 0 ? getColorForCount(count) : "#e5e7eb"}
-                          stroke="#fff"
+                          fill={count > 0 ? getColorForCount(count) : (isDarkMode ? "#374151" : "#e5e7eb")}
+                          stroke={isDarkMode ? "#222" : "#fff"}
                           strokeWidth={0.5}
                           style={{
                             default: { outline: "none" },
-                            hover: { outline: "none", fill: "#3b82f6" },
+                            hover: { outline: "none", fill: isDarkMode ? "#60a5fa" : "#3b82f6" },
                             pressed: { outline: "none" },
                           }}
                         />
@@ -159,7 +189,6 @@ export default function GeoMap({ events = [] }: GeoMapProps) {
                     })
                   }
                 </Geographies>
-
                 {/* Markers for login events */}
                 {geoEvents.map((event, index) => (
                   <Marker
@@ -168,8 +197,10 @@ export default function GeoMap({ events = [] }: GeoMapProps) {
                   >
                     <circle
                       r={2 + Math.min(countryCounts[event.countryCode] || 1, 8)}
-                      fill={event.type === 'LOGIN_SUCCESS' ? '#10b981' : '#ef4444'}
-                      stroke="#fff"
+                      fill={event.type === 'LOGIN_SUCCESS'
+                        ? (isDarkMode ? '#34d399' : '#10b981')
+                        : (isDarkMode ? '#f87171' : '#ef4444')}
+                      stroke={isDarkMode ? "#222" : "#fff"}
                       strokeWidth={1}
                     />
                     <text
@@ -177,7 +208,7 @@ export default function GeoMap({ events = [] }: GeoMapProps) {
                       y={-10}
                       style={{
                         fontFamily: "system-ui",
-                        fill: "#000",
+                        fill: isDarkMode ? "#fff" : "#000",
                         fontSize: "8px",
                         fontWeight: "bold",
                       }}
