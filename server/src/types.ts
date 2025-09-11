@@ -51,6 +51,7 @@ export interface GeoLocationData {
   region: string;
   timezone: string;
   org: string;
+  isp: string;
   asn: string;
   latitude: number | null;
   longitude: number | null;

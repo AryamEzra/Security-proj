@@ -73,10 +73,16 @@ app.post('/login', async (c) => {
     const { ua, ip } = getClientInfo(c.req.raw);
     const clientKey = ip;
     
-    // Get geolocation data
+    // Get geolocation data - THIS WILL BE INSTANT NOW!
     let geoData;
     try {
       geoData = await getGeoLocation(ip);
+      console.log('GeoIP result:', { 
+        ip: geoData.ip, 
+        country: geoData.country, 
+        isp: geoData.isp,
+        city: geoData.city 
+      });
     } catch (geoError) {
       console.warn('Geolocation failed:', geoError);
       geoData = {
@@ -87,11 +93,12 @@ app.post('/login', async (c) => {
         region: 'Unknown',
         timezone: 'UTC',
         org: 'Unknown',
+        isp: 'Unknown ISP',  // Add ISP fallback
         asn: 'AS0000',
         latitude: null,
         longitude: null
       };
-    }
+    } 
     
     // Rate limiting
     if (!loginLimiter(clientKey)) {
@@ -156,7 +163,7 @@ app.post('/login', async (c) => {
       geoData.country_code,
       geoData.country,
       geoData.city,
-      geoData.org,
+      geoData.isp,  // Use geoData.isp instead of geoData.org
       geoData.latitude === null ? undefined : geoData.latitude,
       geoData.longitude === null ? undefined : geoData.longitude
     );

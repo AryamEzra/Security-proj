@@ -53,18 +53,17 @@ db.exec(`
     user_id INTEGER,
     session_id INTEGER,
     message TEXT NOT NULL,
-    ip_address TEXT,           -- ADD THIS
-    country_code TEXT,         -- ADD THIS
-    country_name TEXT,         -- ADD THIS
-    city TEXT,                 -- ADD THIS
-    isp TEXT,                  -- ADD THIS
+    ip_address TEXT,
+    country_code TEXT,
+    country_name TEXT,
+    city TEXT,
+    isp TEXT,  // Ensure this column exists
+    latitude REAL,
+    longitude REAL,
     created_at TEXT NOT NULL,
     FOREIGN KEY(user_id) REFERENCES users(id),
     FOREIGN KEY(session_id) REFERENCES sessions(id)
   );
-
-  ALTER TABLE events ADD COLUMN latitude REAL;
-  ALTER TABLE events ADD COLUMN longitude REAL;
 
 `);
 
@@ -118,7 +117,7 @@ export function insertEvent(
   countryCode?: string,
   countryName?: string,
   city?: string,
-  isp?: string,
+  isp?: string,  // Add ISP parameter
   latitude?: number,
   longitude?: number,
 ) {
@@ -133,7 +132,7 @@ export function insertEvent(
     countryCode ?? null,
     countryName ?? null,
     city ?? null,
-    isp ?? null,
+    isp ?? null,  // Add ISP here
     latitude ?? null,
     longitude ?? null,
     nowISO()

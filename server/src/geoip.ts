@@ -27,6 +27,7 @@ export async function getGeoLocation(ip: string): Promise<GeoLocationData> {
       region: 'Local',
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       org: 'Private Network',
+      isp: 'Private Network',
       asn: 'AS0000',
       latitude: null,
       longitude: null
@@ -44,6 +45,12 @@ export async function getGeoLocation(ip: string): Promise<GeoLocationData> {
       return getFallbackGeoData(ip);
     }
 
+    // Extract ISP information from various fields
+    const isp = data.traits?.isp || 
+                data.traits?.organization || 
+                data.traits?.autonomous_system_organization || 
+                'Unknown ISP';
+
     return {
       ip,
       country: data.country?.names?.en || 'Unknown',
@@ -51,7 +58,8 @@ export async function getGeoLocation(ip: string): Promise<GeoLocationData> {
       city: data.city?.names?.en || 'Unknown',
       region: data.subdivisions?.[0]?.names?.en || 'Unknown',
       timezone: data.location?.time_zone || 'UTC',
-      org: data.traits?.isp || data.traits?.organization || 'Unknown',
+      org: data.traits?.organization || 'Unknown',
+      isp: isp,
       asn: data.traits?.autonomous_system_number ? 
            `AS${data.traits.autonomous_system_number}` : 'AS0000',
       latitude: data.location?.latitude || null,
@@ -72,12 +80,12 @@ function getFallbackGeoData(ip: string): GeoLocationData {
     region: 'Unknown',
     timezone: 'UTC',
     org: 'Unknown',
+    isp: 'Unknown ISP',
     asn: 'AS0000',
     latitude: null,
     longitude: null
   };
 }
-
 
 function isPrivateIP(ip: string): boolean {
   return ip === '127.0.0.1' || 
