@@ -35,3 +35,16 @@ export type Event = {
   message: string;
   createdAt: string;
 };
+
+export interface GeoLocationData {
+  ip: string;
+  country: string;
+  country_code: string;
+  city: string;
+  region: string;
+  timezone: string;
+  org: string;
+  asn: string;
+  latitude: number | null;
+  longitude: number | null;
+}

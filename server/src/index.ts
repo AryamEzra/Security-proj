@@ -12,12 +12,10 @@ import {
 import { generateRefreshToken, verifyRefreshToken, sha256, signAccessToken, verifyAccessToken } from './crypto';
 import { rateLimit } from './rateLimit';
 import { hashPassword, verifyPassword } from './password';
-import { getGeoLocation } from './geolocation';
+import { getGeoLocation, initGeoIP } from './geoip';
 
 const app = new Hono();
 
-// Middleware
-// app.use('*', cors({ origin: '*', allowHeaders: ['Content-Type', 'Authorization'] }));
 app.use(cors({
   origin: [
     "http://localhost:3000", 
@@ -28,10 +26,11 @@ app.use(cors({
   allowHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Helpers
+// Add the readJson function HERE, right after middleware
 async function readJson(req: Request) {
   try {
-    return await req.json();
+    const body = await req.text();
+    return JSON.parse(body);
   } catch {
     return {};
   }
@@ -88,7 +87,9 @@ app.post('/login', async (c) => {
         region: 'Unknown',
         timezone: 'UTC',
         org: 'Unknown',
-        asn: 'AS0000'
+        asn: 'AS0000',
+        latitude: null,
+        longitude: null
       };
     }
     
@@ -155,7 +156,9 @@ app.post('/login', async (c) => {
       geoData.country_code,
       geoData.country,
       geoData.city,
-      geoData.org
+      geoData.org,
+      geoData.latitude === null ? undefined : geoData.latitude,
+      geoData.longitude === null ? undefined : geoData.longitude
     );
 
     return c.json({
@@ -436,10 +439,42 @@ app.post('/debug-sessions', async (c) => {
   }
 });
 
+app.post('/logout', async (c) => {
+  try {
+    const body = await readJson(c.req.raw);
+    const { sessionId } = body;
+
+    if (!sessionId) {
+      return c.json({ error: 'Missing sessionId' }, 400);
+    }
+
+    // You'll need to implement or find the `revokeSession` function
+    revokeSession(sessionId);
+    
+    return c.json({ success: true });
+  } catch (error) {
+    console.error("Logout error:", error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
 // Initialize and start server
 const port = Number(process.env.PORT || 4000);
 
 await seedUser();
+
+(async () => {
+  try {
+    await initGeoIP();
+    console.log('GeoIP database ready ✅');
+  } catch (err) {
+    console.error('Failed to initialize GeoIP', err);
+    process.exit(1); // Stop server if database fails
+  }
+
+  // Start your Bun/Express server here if needed
+  // e.g., app.listen(PORT)
+})();
 
 export default {
   port,

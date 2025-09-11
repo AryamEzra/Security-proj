@@ -63,6 +63,9 @@ db.exec(`
     FOREIGN KEY(session_id) REFERENCES sessions(id)
   );
 
+  ALTER TABLE events ADD COLUMN latitude REAL;
+  ALTER TABLE events ADD COLUMN longitude REAL;
+
 `);
 
 export function nowISO() { return new Date().toISOString(); }
@@ -115,10 +118,12 @@ export function insertEvent(
   countryCode?: string,
   countryName?: string,
   city?: string,
-  isp?: string
+  isp?: string,
+  latitude?: number,
+  longitude?: number,
 ) {
   db.query(
-    'INSERT INTO events (type, user_id, session_id, message, ip_address, country_code, country_name, city, isp, created_at) VALUES (?,?,?,?,?,?,?,?,?,?)'
+    'INSERT INTO events (type, user_id, session_id, message, ip_address, country_code, country_name, city, isp, latitude, longitude, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)'
   ).run(
     type,
     userId,
@@ -129,6 +134,8 @@ export function insertEvent(
     countryName ?? null,
     city ?? null,
     isp ?? null,
+    latitude ?? null,
+    longitude ?? null,
     nowISO()
   );
 }

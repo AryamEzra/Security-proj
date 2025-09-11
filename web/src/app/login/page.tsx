@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDashboardStore } from "../../../store/dashboard";
-import { login, me, refresh } from "../../lib/api";
+import { api, login, me, refresh } from "../../lib/api";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -10,6 +10,8 @@ export default function LoginPage() {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [refreshToken, setRefreshToken] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [userId, setUserIdState] = useState<number | null>(null);
   const { setUserId } = useDashboardStore();
   const router = useRouter();
 
@@ -19,9 +21,10 @@ export default function LoginPage() {
       const r = await login(username, password);
       setAccessToken(r.accessToken);
       setRefreshToken(r.refreshToken);
+      setSessionId(r.sessionId || null);
+      setUserIdState(r.user?.id || null);
       setUserId(r.user?.id || 1);
       setMessage("Login successful!");
-      
       // Redirect to admin after successful login
       // setTimeout(() => router.push('/admin'), 1000);
     } catch (error: any) {
@@ -82,6 +85,29 @@ export default function LoginPage() {
     }
   };
 
+  const handleLogout = async () => {
+  console.log("Logging out with sessionId:", sessionId, "userId:", userId);
+  if (!sessionId || !userId) {
+    alert("No users are logged in.");
+    return;
+  }
+  try {
+    await api.post("/logout", { sessionId, userId });
+    // Clear all stored data
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    setSessionId(null);
+    setUserIdState(null);
+    setAccessToken(null);
+    setRefreshToken(null);
+    setMessage("");
+    router.push("/");
+  } catch (err) {
+    console.error("Logout error:", err);
+    alert("Logout failed. Please try again.");
+  }
+};
+
   return (
     <div className="max-w-md mx-auto card">
       <h2 className="text-lg font-semibold mb-3">Simulate Login</h2>
@@ -99,12 +125,15 @@ export default function LoginPage() {
           value={password} 
           onChange={e => setPassword(e.target.value)} 
         />
-        
-        <div className="flex gap-2 flex-wrap">
+
+        {/* style={{ width: '100%', flexWrap: 'nowrap', overflowX: 'auto' }} */}
+
+        <div className="flex gap-2 flex-nowrap" style={{ width: '100%'}}>
           <button className="btn" onClick={doLogin}>Login</button>
           <button className="btn" onClick={doRefresh} disabled={!refreshToken}>Refresh</button>
           <button className="btn" onClick={triggerReuse} disabled={!refreshToken}>Trigger Reuse</button>
           <button className="btn" onClick={checkMe} disabled={!accessToken}>/me</button>
+          <button className="btn" onClick={handleLogout}>Logout</button>
         </div>
         
         {message && (
