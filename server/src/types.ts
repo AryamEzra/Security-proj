@@ -29,11 +29,18 @@ export type Session = {
 
 export type Event = {
   id: number;
-  type: 'LOGIN_SUCCESS' | 'LOGIN_FAILED' | 'REFRESH' | 'TOKEN_REUSE_DETECTED' | 'FAMILY_REVOKED' | 'SESSION_REVOKED';
+  type: 'LOGIN_SUCCESS' | 'LOGIN_FAILED' | 'REFRESH' | 'TOKEN_REUSE_DETECTED' | 'FAMILY_REVOKED' | 'SESSION_REVOKED' | 'USER_SIGNUP';
   userId: number | null;
   sessionId: number | null;
   message: string;
   createdAt: string;
+  ipAddress: string | null;
+  countryCode: string | null;
+  countryName: string | null;
+  city: string | null;
+  isp: string | null;
+  latitude: number | null;
+  longitude: number | null;
 };
 
 export interface GeoLocationData {

@@ -293,6 +293,9 @@ export default function AdminPage() {
                       User: {event.user_id || event.userId || 'N/A'}, 
                       Session: {event.session_id || event.sessionId || 'N/A'}
                     </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                      IP: {event.ip_address || 'N/A'} &bull; ISP: {event.isp || 'N/A'}
+                    </div>
                   </div>
                 ))}
               </div>
