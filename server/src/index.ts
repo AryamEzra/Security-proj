@@ -12,7 +12,7 @@ import {
 import { generateRefreshToken, verifyRefreshToken, sha256, signAccessToken, verifyAccessToken } from './crypto';
 import { rateLimit } from './rateLimit';
 import { hashPassword, verifyPassword } from './password';
-import { getGeoLocation, initGeoIP } from './geoip-enhanced';
+import { getGeoLocation } from './ipinfo-service';
 
 const app = new Hono();
 
@@ -469,19 +469,6 @@ app.post('/logout', async (c) => {
 const port = Number(process.env.PORT || 4000);
 
 await seedUser();
-
-(async () => {
-  try {
-    await initGeoIP();
-    console.log('GeoIP database ready ✅');
-  } catch (err) {
-    console.error('Failed to initialize GeoIP', err);
-    process.exit(1); // Stop server if database fails
-  }
-
-  // Start your Bun/Express server here if needed
-  // e.g., app.listen(PORT)
-})();
 
 export default {
   port,

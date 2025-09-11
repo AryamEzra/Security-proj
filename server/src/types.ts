@@ -44,6 +44,7 @@ export type Event = {
 };
 
 export interface GeoLocationData {
+  cachedAt: number;
   ip: string;
   country: string;
   country_code: string;
