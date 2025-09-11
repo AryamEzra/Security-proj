@@ -8,10 +8,13 @@ WORKDIR /app
 COPY package.json bun.lockb* ./
 
 # Install dependencies
-RUN bun install
+RUN bun install --frozen-lockfile
 
-# Copy the rest of the code
-COPY . .
+# Copy the GeoLite2-City.mmdb file
+COPY GeoLite2-City.mmdb ./
+
+# Copy source code
+COPY src ./src
 
 # Expose the port your server listens on
 EXPOSE 4000
