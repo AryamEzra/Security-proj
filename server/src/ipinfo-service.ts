@@ -8,6 +8,30 @@ const IPINFO_API_KEY = process.env.IPINFO_API_KEY || 'e84483c7e399ca';
 const geoCache = new Map<string, GeoLocationData>();
 const CACHE_TTL = 60 * 60 * 1000; // 1 hour cache
 
+// Map of country codes to full country names
+const countryCodeToName: Record<string, string> = {
+  'NL': 'Netherlands',
+  'PL': 'Poland',
+  'SG': 'Singapore', 
+  'US': 'United States',
+  'JP': 'Japan',
+  'RO': 'Romania',
+  'ET': 'Ethiopia',
+  'GB': 'United Kingdom',
+  'CA': 'Canada',
+  'DE': 'Germany',
+  'FR': 'France',
+  'CN': 'China',
+  'IN': 'India',
+  'BR': 'Brazil',
+  'RU': 'Russia',
+  'AU': 'Australia',
+  'ZA': 'South Africa',
+  'NG': 'Nigeria',
+  'KE': 'Kenya',
+  'EG': 'Egypt',
+};
+
 export async function getGeoLocation(ip: string): Promise<GeoLocationData> {
   // Handle private IPs
   if (isPrivateIP(ip)) {
@@ -47,6 +71,10 @@ export async function getGeoLocation(ip: string): Promise<GeoLocationData> {
 
     const data = await response.json();
 
+    // Get full country name from mapping or use country code as fallback
+    const countryCode = data.country || 'XX';
+    const countryName = countryCodeToName[countryCode] || countryCode;
+    
     // Parse the ASN information if available
     let asn = 'AS0000';
     let isp = data.org || 'Unknown ISP';
@@ -70,8 +98,8 @@ export async function getGeoLocation(ip: string): Promise<GeoLocationData> {
 
     const geoData: GeoLocationData & { cachedAt: number } = {
       ip: data.ip || ip,
-      country: data.country || 'Unknown',
-      country_code: data.country || 'XX',
+      country: countryName, // Use full country name here
+      country_code: countryCode, // Keep the 2-letter code separate
       city: data.city || 'Unknown',
       region: data.region || 'Unknown',
       timezone: data.timezone || 'UTC',
