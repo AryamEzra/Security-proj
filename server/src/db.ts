@@ -57,7 +57,7 @@ db.exec(`
     country_code TEXT,
     country_name TEXT,
     city TEXT,
-    isp TEXT,  // Ensure this column exists
+    isp TEXT,
     latitude REAL,
     longitude REAL,
     created_at TEXT NOT NULL,
