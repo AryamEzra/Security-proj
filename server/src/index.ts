@@ -12,7 +12,7 @@ import {
 import { generateRefreshToken, verifyRefreshToken, sha256, signAccessToken, verifyAccessToken } from './crypto';
 import { rateLimit } from './rateLimit';
 import { hashPassword, verifyPassword } from './password';
-import { getGeoLocation, initGeoIP } from './geoip';
+import { getGeoLocation, initGeoIP } from './geoip-enhanced';
 
 const app = new Hono();
 
