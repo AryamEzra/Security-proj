@@ -296,7 +296,8 @@ export default function GeoMap({ events = [], isDarkMode = false }: GeoMapProps)
         <h4 className="font-medium text-gray-900 dark:text-white mb-3">Recent Login Activity</h4>
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-            <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+            <thead className="text-xs uppercase bg-neutral-100 dark:bg-neutral-900 text-gray-700 dark:text-neutral-400">
+
               <tr>
                 <th className="px-4 py-2">Time</th>
                 <th className="px-4 py-2">User</th>
