@@ -407,12 +407,40 @@ app.post('/signup', async (c) => {
       return c.json({ error: 'Missing required fields' }, 400);
     }
 
+    // Server-side password strength validation
+    function evaluatePasswordServer(pw: string, usernameOrEmail: string | undefined) {
+      let score = 0;
+      const suggestions: string[] = [];
+
+      if (pw.length >= 8) score++; else suggestions.push('at least 8 characters');
+      if (/[A-Z]/.test(pw)) score++; else suggestions.push('an uppercase letter');
+      if (/[0-9]/.test(pw)) score++; else suggestions.push('a number');
+      if (/[^A-Za-z0-9]/.test(pw)) score++; else suggestions.push('a symbol');
+
+      if (usernameOrEmail) {
+        const lower = pw.toLowerCase();
+        const local = usernameOrEmail.split('@')[0].toLowerCase();
+        const uname = usernameOrEmail.toLowerCase();
+        if ((local && local.length >= 3 && lower.includes(local)) || (uname && uname.length >= 3 && lower.includes(uname))) {
+          score = Math.max(0, score - 2);
+          suggestions.push('do not include your username/email');
+        }
+      }
+
+      return { score, suggestions };
+    }
+
+    const pwEval = evaluatePasswordServer(password, username || email);
+    if (pwEval.score < 4) {
+      return c.json({ error: 'Password too weak. Include at least 8 chars, uppercase, number and a symbol, and avoid using your username/email.' + (pwEval.suggestions.length ? ' Suggestions: ' + pwEval.suggestions.slice(0,3).join(', ') : '') }, 400);
+    }
+
     // Check if user exists
     const existingUser = db.query('SELECT id FROM users WHERE username = ? OR email = ?')
       .get(username, email) as any;
     
     if (existingUser) {
-      return c.json({ error: 'User already exists.' }, 409);
+      return c.json({ error: 'User already exists. Please login into your account' }, 409);
     }
 
     // Hash password

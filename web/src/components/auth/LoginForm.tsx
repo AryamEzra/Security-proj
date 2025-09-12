@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDashboardStore } from "../../../store/dashboard";
 import { api, login, me, refresh } from "../../lib/api";
+import PasswordField from "../../components/ui/PasswordField";
 
 export default function LoginForm() {
   const [username, setUsername] = useState("");
@@ -118,13 +119,10 @@ export default function LoginForm() {
           value={username} 
           onChange={e => setUsername(e.target.value)} 
         />
-        <input 
-          className="input w-full" 
-          placeholder="password" 
-          type="password" 
-          value={password} 
-          onChange={e => setPassword(e.target.value)} 
-        />
+        {/* Password field with show/hide */}
+        {/* eslint-disable-next-line @typescript-eslint/ban-ts-comment */}
+        {/* @ts-ignore-next-line */}
+        <PasswordField value={password} onChange={setPassword} placeholder="password" />
 
         {/* style={{ width: '100%', flexWrap: 'nowrap', overflowX: 'auto' }} */}
 

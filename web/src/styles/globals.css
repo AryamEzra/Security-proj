@@ -88,6 +88,22 @@ body {
 .dark .input {
 	@apply border-neutral-700 bg-neutral-950 text-neutral-100;
 }
+
+/* Make focus appearance explicit so browsers don't show inconsistent black outlines */
+.input:focus,
+.input:focus-visible {
+  outline: none;
+  /* darker grey ring (tailwind gray-500) */
+  border-color: #6b7280;
+}
+
+.dark .input:focus,
+.dark .input:focus-visible {
+  outline: none;
+  /* slightly lighter grey for dark mode so it remains visible */
+  border-color: #9ca3af;
+  box-shadow: 0 0 0 3px rgba(156,163,175,0.12);
+}
 .dark .muted {
 	@apply text-neutral-400;
 }
