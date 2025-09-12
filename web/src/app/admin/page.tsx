@@ -93,7 +93,7 @@ export default function AdminPage() {
       title: 'Blocked Attempts',
       value: events.filter((e: any) => e.type.includes('FAILED') || e.type.includes('REVOKED')).length,
       color: 'bg-red-500'
-    }
+    }  
   ];
 
   // Custom label for pie chart with smaller text
@@ -119,15 +119,12 @@ export default function AdminPage() {
     );
   };
 
-  // Detect dark mode
-  const isDarkMode = typeof window !== 'undefined' && document.documentElement.classList.contains('dark');
-
   return (
-    <div className={`min-h-screen p-6 ${isDarkMode ? 'bg-neutral-900' : ''}`}>
+    <div className={`min-h-screen p-6 $`}>
       <div className="max-w-7xl mx-auto space-y-6">
         <DashboardHeader message={message} />
 
-        <GeoMap events={events} isDarkMode={isDarkMode} />
+        <GeoMap events={events}  />
 
         {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
