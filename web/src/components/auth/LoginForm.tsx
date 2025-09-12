@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useDashboardStore } from "../../../store/dashboard";
 import { api, login, me, refresh } from "../../lib/api";
 import PasswordField from "../../components/ui/PasswordField";
+import Link from "next/link";
 
 export default function LoginForm() {
   const [username, setUsername] = useState("");
@@ -11,6 +12,8 @@ export default function LoginForm() {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [refreshToken, setRefreshToken] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const [showSignupPrompt, setShowSignupPrompt] = useState(false);
+  const [signupPromptMsg, setSignupPromptMsg] = useState("");
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [userId, setUserIdState] = useState<number | null>(null);
   const { setUserId } = useDashboardStore();
@@ -29,7 +32,17 @@ export default function LoginForm() {
       // Redirect to admin after successful login
       // setTimeout(() => router.push('/admin'), 1000);
     } catch (error: any) {
-      setMessage(`Login failed: ${error.response?.data?.error || error.message}`);
+      const serverMsg = error.response?.data?.error || error.message;
+      setMessage(`Login failed: ${serverMsg}`);
+
+      // If server says invalid credentials or account missing, prompt to sign up
+      const status = error.response?.status;
+      if (status === 401 && /invalid credentials|missing credentials|user not found|account not found/i.test(serverMsg)) {
+        setShowSignupPrompt(true);
+        setSignupPromptMsg('Account not found. Would you like to create one?');
+      } else {
+        setShowSignupPrompt(false);
+      }
     }
   };
 
@@ -137,6 +150,14 @@ export default function LoginForm() {
         {message && (
           <div className="p-3 bg-blue-100 text-blue-800 rounded-lg text-sm">
             {message}
+          </div>
+        )}
+        {showSignupPrompt && (
+          <div className="p-3 bg-blue-100 text-blue-800 rounded-lg text-sm mt-2">
+            <div className="font-medium">{signupPromptMsg}</div>
+            <div className="mt-2">
+              <Link href="/signup" className="underline text-blue-600">Go to Sign up</Link>
+            </div>
           </div>
         )}
         
