@@ -9,15 +9,7 @@ import EventTypesChart from "@/src/components/admin/EventTypesChart";
 import ActivityChart from "@/src/components/admin/ActivityChart";
 import RecentEvents from "@/src/components/admin/RecentEvents";
 
-// Color palette that matches your dark/light theme
-const CHART_COLORS = {
-  primary: '#3b82f6',    // blue-500
-  success: '#10b981',    // green-500
-  danger: '#ef4444',     // red-500
-  warning: '#f59e0b',    // amber-500
-  purple: '#8b5cf6',     // purple-500
-  gray: '#6b7280'        // gray-500
-};
+import { CHART_COLORS, getEventColor } from '@/src/components/admin/eventColors';
 
 export default function AdminPage() {
   const [users, setUsers] = useState<any[]>([]);
@@ -51,16 +43,7 @@ export default function AdminPage() {
     }
   };
 
-  // Color by event type
-  const getEventColor = (type: string) => {
-    if (type === 'LOGIN_SUCCESS') return CHART_COLORS.success;
-    if (type === 'FAMILY_REVOKED') return CHART_COLORS.danger;
-    if (type === 'TOKEN_REUSE_DETECTED') return CHART_COLORS.warning;
-    if (type === 'REFRESH') return CHART_COLORS.primary;
-    if (type === 'USER_SIGNUP') return CHART_COLORS.gray;
-    if (type === 'LOGIN_FAILED') return '#fbbf24'; // yellow-400
-    return CHART_COLORS.purple;
-  };
+  // Color mapping is now imported from shared module
 
   // Prepare chart data
   const eventTypeData = Object.entries(stats).map(([type, count]) => ({

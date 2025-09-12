@@ -33,17 +33,30 @@ export default function LoginForm() {
       // setTimeout(() => router.push('/admin'), 1000);
     } catch (error: any) {
       const serverMsg = error.response?.data?.error || error.message;
-      setMessage(`Login failed: ${serverMsg}`);
-
-      // If server says invalid credentials or account missing, prompt to sign up
       const status = error.response?.status;
-      if (status === 401 && /invalid credentials|missing credentials|user not found|account not found/i.test(serverMsg)) {
+
+      // Distinguish between user not found (suggest signup) and incorrect password
+      if (status === 404 || /user not found/i.test(serverMsg)) {
+        setMessage('Account not found. Would you like to create one?');
         setShowSignupPrompt(true);
         setSignupPromptMsg('Account not found. Would you like to create one?');
+      } else if (status === 401 && /incorrect password/i.test(serverMsg)) {
+        setMessage('Incorrect password. Please try again.');
+        setShowSignupPrompt(false);
+      } else if (status === 401 && /invalid credentials/i.test(serverMsg)) {
+        // Generic invalid credentials fallback
+        setMessage('Invalid credentials. Please check your username and password.');
+        setShowSignupPrompt(false);
       } else {
+        setMessage(`Login failed: ${serverMsg}`);
         setShowSignupPrompt(false);
       }
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await doLogin();
   };
 
   const checkMe = async () => {
@@ -125,7 +138,7 @@ export default function LoginForm() {
   return (
     <div className="max-w-md mx-auto card">
       <h2 className="text-lg font-semibold mb-3">Simulate Login</h2>
-      <div className="space-y-3">
+      <form className="space-y-3" onSubmit={handleSubmit}>
         <input 
           className="input w-full" 
           placeholder="username" 
@@ -140,7 +153,7 @@ export default function LoginForm() {
         {/* style={{ width: '100%', flexWrap: 'nowrap', overflowX: 'auto' }} */}
 
         <div className="flex gap-2 flex-nowrap" style={{ width: '100%'}}>
-          <button className="btn" onClick={doLogin}>Login</button>
+          <button className="btn" type="submit">Login</button>
           <button className="btn" onClick={doRefresh} disabled={!refreshToken}>Refresh</button>
           <button className="btn" onClick={triggerReuse} disabled={!refreshToken}>Trigger Reuse</button>
           <button className="btn" onClick={checkMe} disabled={!accessToken}>/me</button>
@@ -165,7 +178,7 @@ export default function LoginForm() {
           <div className="muted text-sm">Access Token: {accessToken ? `${accessToken.slice(0, 20)}...` : 'None'}</div>
           <div className="muted text-sm">Refresh Token: {refreshToken ? `${refreshToken.slice(0, 10)}...` : 'None'}</div>
         </div>
-      </div>
+  </form>
     </div>
   );
 }

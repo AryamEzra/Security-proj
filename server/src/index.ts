@@ -113,12 +113,31 @@ app.post('/login', async (c) => {
       return c.json({ error: 'Missing credentials' }, 400);
     }
 
-    // Authenticate user
-    const user = await authenticateUser(username, password);
-    if (!user) {
-      insertEvent('LOGIN_FAILED', null, null, `Invalid credentials for ${username}`);
+    // Check if user exists first
+    const userRecord = findUserByUsername(username);
+    if (!userRecord) {
+      insertEvent('LOGIN_FAILED', null, null, `Login attempt for non-existent user ${username}`);
+      return c.json({ error: 'User not found' }, 404);
+    }
+
+    // Verify password
+    let passwordValid = false;
+    try {
+      passwordValid = await verifyPassword(password, (userRecord as any).passwordHash);
+    } catch (err) {
+      console.error('Password verification error:', err);
+      // Treat verification errors as invalid credentials
+      insertEvent('LOGIN_FAILED', userRecord.id, null, `Password verification error for ${username}`);
       return c.json({ error: 'Invalid credentials' }, 401);
     }
+
+    if (!passwordValid) {
+      insertEvent('LOGIN_FAILED', userRecord.id, null, `Incorrect password for ${username}`);
+      return c.json({ error: 'Incorrect password' }, 401);
+    }
+
+    // Normalize user object for the rest of the flow
+    const user = { id: userRecord.id, username: userRecord.username };
 
     // Create session family and tokens
     const familyId = createFamily(user.id);

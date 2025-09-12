@@ -156,7 +156,7 @@ export default function SignUpForm() {
   return (
     <div className="max-w-md mx-auto card">
       <h2 className="text-lg font-semibold mb-3">Create Account</h2>
-      <div className="space-y-3">
+  <form className="space-y-3" onSubmit={handleSubmit}>
         <EmailUsernameInputs
           email={email}
           setEmail={setEmail}
@@ -186,7 +186,6 @@ export default function SignUpForm() {
           className="btn w-full rounded-full font-semibold"
           style={{ borderRadius: "9999px" }}
           disabled={loading}
-          onClick={handleSubmit}
         >
           {loading ? "Creating Account..." : "Sign Up"}
         </button>
@@ -194,7 +193,7 @@ export default function SignUpForm() {
           <span className="muted text-sm">Already have an account? </span>
           <Link href="/login" className="text-blue-600 hover:underline">Sign in</Link>
         </div>
-      </div>
+  </form>
     </div>
   );
 }
