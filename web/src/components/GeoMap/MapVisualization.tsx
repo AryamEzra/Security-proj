@@ -7,6 +7,7 @@ import {
   ZoomableGroup
 } from "react-simple-maps";
 import { getColorForCount } from "../utils/geoUtils";
+import { useTheme } from "../ThemeProvider";
 
 const GEO_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 
@@ -30,8 +31,10 @@ interface MapVisualizationProps {
 }
 
 export function MapVisualization({ geoEvents, countryCounts }: MapVisualizationProps) {
+  const { theme } = useTheme(); // Get current theme
+
   return (
-    <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-700 h-96">
+    <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800 h-96">
       <ComposableMap
         projection="geoMercator"
         projectionConfig={{
@@ -49,15 +52,14 @@ export function MapVisualization({ geoEvents, countryCounts }: MapVisualizationP
                   <Geography
                     key={geo.rsmKey}
                     geography={geo}
-                    fill={count > 0 ? getColorForCount(count) : "#e5e7eb"}
-                    stroke="#fff"
+                    fill={count > 0 ? getColorForCount(count, theme) : theme === 'dark' ? '#374151' : '#e5e7eb'}
+                    stroke={theme === 'dark' ? '#4B5563' : '#fff'}
                     strokeWidth={0.5}
                     style={{
                       default: { outline: "none" },
-                      hover: { outline: "none", fill: "#3b82f6" },
+                      hover: { outline: "none", fill: getColorForCount(1, theme) },
                       pressed: { outline: "none" },
                     }}
-                    className="dark:stroke-gray-800"
                   />
                 );
               })
@@ -74,18 +76,16 @@ export function MapVisualization({ geoEvents, countryCounts }: MapVisualizationP
                 fill={event.type === 'LOGIN_SUCCESS' ? '#10b981' : '#ef4444'}
                 stroke="#fff"
                 strokeWidth={1}
-                className="dark:fill-green-400 dark:stroke-gray-800"
               />
               <text
                 textAnchor="middle"
                 y={-10}
                 style={{
                   fontFamily: "system-ui",
-                  fill: "#000",
+                  fill: theme === 'dark' ? '#fff' : '#000',
                   fontSize: "8px",
                   fontWeight: "bold",
                 }}
-                className="dark:fill-white"
               >
                 {countryCounts[event.countryCode]}
               </text>

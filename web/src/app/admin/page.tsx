@@ -80,6 +80,11 @@ export default function AdminPage() {
   // Dashboard stats
   const dashboardStats = [
     {
+      title: 'Successful Logins',
+      value: stats.LOGIN_SUCCESS || 0,
+      color: 'bg-green-500'
+    },
+    {
       title: 'Total Users',
       value: users.length,
       color: 'bg-blue-500'

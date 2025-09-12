@@ -1,8 +1,8 @@
-export function getColorForCount(count: number): string {
-  if (count > 10) return '#ef4444 dark:#f87171';    // red / lighter red
-  if (count > 5) return '#f59e0b dark:#fbbf24';     // amber / lighter amber
-  if (count > 2) return '#10b981 dark:#34d399';     // green / lighter green
-  return '#3b82f6 dark:#60a5fa';                    // blue / lighter blue
+export function getColorForCount(count: number, theme: string): string {
+  if (count > 10) return theme === 'dark' ? '#f87171' : '#ef4444';
+  if (count > 5) return theme === 'dark' ? '#fbbf24' : '#f59e0b';
+  if (count > 2) return theme === 'dark' ? '#34d399' : '#10b981';
+  return theme === 'dark' ? '#60a5fa' : '#3b82f6';
 }
 
 export function getTopCountries(countryCounts: Record<string, number>, limit: number = 8) {

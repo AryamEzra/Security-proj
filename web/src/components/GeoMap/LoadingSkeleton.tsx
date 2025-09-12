@@ -1,3 +1,5 @@
+"use client";
+
 interface LoadingSkeletonProps {}
 
 export function LoadingSkeleton({}: LoadingSkeletonProps) {

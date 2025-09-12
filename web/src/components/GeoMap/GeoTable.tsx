@@ -15,6 +15,7 @@ interface GeoEvent {
 interface GeoTableProps {
   geoEvents: GeoEvent[];
 }
+"use client";
 
 export function GeoTable({ geoEvents }: GeoTableProps) {
   return (
