@@ -17,6 +17,8 @@ interface GeoTableProps {
 }
 "use client";
 
+import { getEventColor } from "@/src/components/admin/eventColors";
+
 export function GeoTable({ geoEvents }: GeoTableProps) {
   return (
     <div className="mt-6">
@@ -27,6 +29,7 @@ export function GeoTable({ geoEvents }: GeoTableProps) {
             <tr>
               <th className="px-4 py-2">Time</th>
               <th className="px-4 py-2">User</th>
+              <th className="px-4 py-2">Type</th>
               <th className="px-4 py-2">Country</th>
               <th className="px-4 py-2">City</th>
               <th className="px-4 py-2">ISP</th>
@@ -38,6 +41,21 @@ export function GeoTable({ geoEvents }: GeoTableProps) {
               <tr key={event.id} className="border-b dark:border-gray-700">
                 <td className="px-4 py-2 text-gray-900 dark:text-gray-300">{new Date(event.timestamp).toLocaleTimeString()}</td>
                 <td className="px-4 py-2 font-medium text-gray-900 dark:text-white">{event.username}</td>
+                <td className="px-4 py-2">
+                  <span className="inline-flex items-center gap-2">
+                    <span style={{ background: getEventColor(event.type) }} className="w-5 h-5 rounded-sm inline-block" aria-hidden></span>
+                    <span className="text-xs font-medium">{(() => {
+                      const t = event.type || '';
+                      if (t === 'LOGIN_SUCCESS') return 'LS';
+                      if (t === 'LOGIN_FAILED') return 'LF';
+                      if (t === 'REFRESH') return 'RF';
+                      if (t === 'USER_SIGNUP') return 'US';
+                      if (t === 'FAMILY_REVOKED') return 'FR';
+                      if (t === 'TOKEN_REUSE_DETECTED') return 'TR';
+                      return t.split('_').map(s => s[0]).join('').slice(0,2).toUpperCase();
+                    })()}</span>
+                  </span>
+                </td>
                 <td className="px-4 py-2">
                   <span className={`px-2 py-1 rounded text-xs ${
                     event.countryCode !== 'ET'

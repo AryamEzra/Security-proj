@@ -77,6 +77,7 @@ export function MapVisualization({ geoEvents, countryCounts }: MapVisualizationP
                 stroke="#fff"
                 strokeWidth={1}
               />
+              {/* show failed count if any, otherwise show country count */}
               <text
                 textAnchor="middle"
                 y={-10}
@@ -87,7 +88,8 @@ export function MapVisualization({ geoEvents, countryCounts }: MapVisualizationP
                   fontWeight: "bold",
                 }}
               >
-                {countryCounts[event.countryCode]}
+                <title>{event.username}</title>
+                {(event as any).failedCount && (event as any).failedCount > 0 ? (event as any).failedCount : countryCounts[event.countryCode]}
               </text>
             </Marker>
           ))}

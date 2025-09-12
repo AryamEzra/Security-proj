@@ -7,10 +7,11 @@ import { StatisticsPanel } from "./GeoMap/StatisticsPanel";
 
 interface GeoMapProps {
   events?: any[];
+  users?: any[];
 }
 
-export default function GeoMap({ events = [] }: GeoMapProps) {
-  const { geoEvents, countryCounts, loading } = useGeoData(events);
+export default function GeoMap({ events = [], users = [] }: GeoMapProps) {
+  const { geoEvents, countryCounts, loading } = useGeoData(events, users);
 
   if (loading) {
     return <LoadingSkeleton />;

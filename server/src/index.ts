@@ -102,7 +102,7 @@ app.post('/login', async (c) => {
     
     // Rate limiting
     if (!loginLimiter(clientKey)) {
-      insertEvent('LOGIN_FAILED', null, null, 'Rate limited');
+      insertEvent('LOGIN_FAILED', null, null, 'Rate limited', ip, geoData.country_code, geoData.country, geoData.city, geoData.isp, geoData.latitude === null ? undefined : geoData.latitude, geoData.longitude === null ? undefined : geoData.longitude);
       return c.json({ error: 'Too many attempts' }, 429);
     }
 
@@ -116,7 +116,7 @@ app.post('/login', async (c) => {
     // Check if user exists first
     const userRecord = findUserByUsername(username);
     if (!userRecord) {
-      insertEvent('LOGIN_FAILED', null, null, `Login attempt for non-existent user ${username}`);
+      insertEvent('LOGIN_FAILED', null, null, `Login attempt for non-existent user ${username}`, ip, geoData.country_code, geoData.country, geoData.city, geoData.isp, geoData.latitude === null ? undefined : geoData.latitude, geoData.longitude === null ? undefined : geoData.longitude);
       return c.json({ error: 'User not found' }, 404);
     }
 
@@ -127,12 +127,12 @@ app.post('/login', async (c) => {
     } catch (err) {
       console.error('Password verification error:', err);
       // Treat verification errors as invalid credentials
-      insertEvent('LOGIN_FAILED', userRecord.id, null, `Password verification error for ${username}`);
+      insertEvent('LOGIN_FAILED', userRecord.id, null, `Password verification error for ${username}`, ip, geoData.country_code, geoData.country, geoData.city, geoData.isp, geoData.latitude === null ? undefined : geoData.latitude, geoData.longitude === null ? undefined : geoData.longitude);
       return c.json({ error: 'Invalid credentials' }, 401);
     }
 
     if (!passwordValid) {
-      insertEvent('LOGIN_FAILED', userRecord.id, null, `Incorrect password for ${username}`);
+      insertEvent('LOGIN_FAILED', userRecord.id, null, `Incorrect password for ${username}`, ip, geoData.country_code, geoData.country, geoData.city, geoData.isp, geoData.latitude === null ? undefined : geoData.latitude, geoData.longitude === null ? undefined : geoData.longitude);
       return c.json({ error: 'Incorrect password' }, 401);
     }
 
@@ -229,13 +229,13 @@ app.post('/refresh', async (c) => {
     
     if (!session) {
       console.log("No session found for this refresh token");
-      insertEvent('TOKEN_REUSE_DETECTED', null, null, 'Unknown refresh token used');
+      insertEvent('TOKEN_REUSE_DETECTED', null, null, 'Unknown refresh token used', ip, undefined, undefined, undefined, undefined, undefined, undefined);
       return c.json({ error: 'Invalid refresh token' }, 401);
     }
 
     if (session.revokedAt) {
       console.log("Session has been revoked:", session.revokedAt);
-      insertEvent('TOKEN_REUSE_DETECTED', session.userId, session.id, 'Revoked refresh token used');
+      insertEvent('TOKEN_REUSE_DETECTED', session.userId, session.id, 'Revoked refresh token used', ip, undefined, undefined, undefined, undefined, undefined, undefined);
       return c.json({ error: 'Refresh token revoked' }, 401);
     }
 
@@ -247,7 +247,7 @@ app.post('/refresh', async (c) => {
     
     if (!valid) {
       console.log("Refresh token verification FAILED");
-      insertEvent('TOKEN_REUSE_DETECTED', session.userId, session.id, 'Refresh token verification failed');
+      insertEvent('TOKEN_REUSE_DETECTED', session.userId, session.id, 'Refresh token verification failed', ip, undefined, undefined, undefined, undefined, undefined, undefined);
       return c.json({ error: 'Invalid refresh token' }, 401);
     }
 
@@ -263,7 +263,7 @@ app.post('/refresh', async (c) => {
       console.log("TOKEN REUSE DETECTED! Binding mismatch");
       markFamilyCompromised(session.familyId);
       revokeFamily(session.familyId);
-      insertEvent('TOKEN_REUSE_DETECTED', session.userId, session.id, 'Binding mismatch, family revoked');
+      insertEvent('TOKEN_REUSE_DETECTED', session.userId, session.id, 'Binding mismatch, family revoked', ip, undefined, undefined, undefined, undefined, undefined, undefined);
       return c.json({ error: 'Token reuse detected. Family revoked.' }, 401);
     }
 
@@ -288,8 +288,8 @@ app.post('/refresh', async (c) => {
     console.log("Updating session with new refresh token...");
     
     // Update session with new refresh token
-    updateSessionRefresh(session.id, newRefresh.lookupHash, newRefresh.atRestHash, refreshExpISO);
-    insertEvent('REFRESH', session.userId, session.id, 'Refresh token rotated');
+  updateSessionRefresh(session.id, newRefresh.lookupHash, newRefresh.atRestHash, refreshExpISO);
+  insertEvent('REFRESH', session.userId, session.id, 'Refresh token rotated', ip, undefined, undefined, undefined, undefined, undefined, undefined);
 
     console.log("Token rotation completed successfully");
     
@@ -471,7 +471,9 @@ app.post('/signup', async (c) => {
 
     const userId = db.query('SELECT last_insert_rowid() as id').get() as any;
 
-    insertEvent('USER_SIGNUP', userId.id, null, `New user registered: ${username}`);
+  // Attach IP/geo data to signup event if available
+  const { ua, ip } = getClientInfo(c.req.raw);
+  insertEvent('USER_SIGNUP', userId.id, null, `New user registered: ${username}`, ip, undefined, undefined, undefined, undefined, undefined, undefined);
     
     return c.json({ success: true, message: 'User created successfully' });
     

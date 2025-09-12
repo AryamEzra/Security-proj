@@ -13,6 +13,7 @@ interface GeoEvent {
   type: string;
   latitude?: number;
   longitude?: number;
+  failedCount?: number;
 }
 
 interface UseGeoDataReturn {
@@ -21,7 +22,7 @@ interface UseGeoDataReturn {
   loading: boolean;
 }
 
-export function useGeoData(events: any[] = []): UseGeoDataReturn {
+export function useGeoData(events: any[] = [], users: any[] = []): UseGeoDataReturn {
   const [geoEvents, setGeoEvents] = useState<GeoEvent[]>([]);
   const [countryCounts, setCountryCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
@@ -31,23 +32,42 @@ export function useGeoData(events: any[] = []): UseGeoDataReturn {
       setLoading(true);
 
       // Filter and process events with ACTUAL coordinates
-      const geoEventsData: GeoEvent[] = events
-        .filter(event => event.type === 'LOGIN_SUCCESS' || event.type === 'LOGIN_FAILED')
+      // Build a quick user id -> username map
+      const usersMap: Record<string | number, string> = {};
+      for (const u of users) {
+        if (u?.id != null) usersMap[u.id] = u.username ?? `${u.id}`;
+      }
+
+      const rawGeo = events.filter(event => event.type === 'LOGIN_SUCCESS' || event.type === 'LOGIN_FAILED');
+
+      // Compute failed attempts per IP
+      const failedPerIp: Record<string, number> = {};
+      rawGeo.forEach(e => {
+        const ip = e.ip_address || e.ip || '';
+        const isFailed = /FAILED|LOGIN_FAILED|LOGIN_FAILED/i.test(e.type || '');
+        if (ip && isFailed) failedPerIp[ip] = (failedPerIp[ip] || 0) + 1;
+      });
+
+      const geoEventsData: GeoEvent[] = rawGeo
         .map(event => {
-          // Use ACTUAL coordinates from the database, not country centers
+          const ip = event.ip_address || event.ip || '';
+          const userId = event.user_id ?? event.userId ?? event.user?.id;
+          const username = event.user?.username ?? (userId != null ? (usersMap[userId] ?? `User ${userId}`) : 'Unknown');
+
           return {
             id: event.id,
-            ip: event.ip_address || event.ip,
+            ip,
             countryCode: event.country_code || 'XX',
             countryName: event.country_name || event.country || 'Unknown',
             city: event.city || 'Unknown',
             isp: event.isp || 'Unknown',
             timestamp: event.created_at || event.createdAt,
-            username: event.user_id ? `User ${event.user_id}` : 'Unknown',
+            username,
             type: event.type,
-            latitude: event.latitude || null,  // Use actual latitude
-            longitude: event.longitude || null // Use actual longitude
-          };
+            latitude: event.latitude ?? null,  // Use actual latitude
+            longitude: event.longitude ?? null, // Use actual longitude
+            failedCount: failedPerIp[ip] || 0
+          } as GeoEvent & { failedCount: number };
         })
         .filter(event => event.latitude !== null && event.longitude !== null); // Only events with coordinates
 
@@ -63,7 +83,7 @@ export function useGeoData(events: any[] = []): UseGeoDataReturn {
     };
 
     processEvents();
-  }, [events]);
+  }, [events, users]);
 
   return { geoEvents, countryCounts, loading };
 }

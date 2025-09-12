@@ -112,7 +112,7 @@ export default function AdminPage() {
       <div className="max-w-7xl mx-auto space-y-6">
         <DashboardHeader message={message} />
 
-        <GeoMap events={events}  />
+  <GeoMap events={events} users={users} />
 
         {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
