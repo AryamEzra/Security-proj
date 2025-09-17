@@ -1,7 +1,7 @@
 import axios from "axios";
 
 export const api = axios.create({
-  baseURL: 'https://security-proj.onrender.com/api',
+  baseURL: '/api', // Use the proxy path instead of full URL
   headers: { "Content-Type": "application/json" }
 });
 

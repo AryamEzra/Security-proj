@@ -1,7 +1,7 @@
 // src/ipinfo-service.ts
 import { GeoLocationData } from './types';
 
-const IPINFO_BASE_URL = 'https://ipinfo.io';
+const IPINFO_BASE_URL = 'http://ipinfo.io';
 const IPINFO_API_KEY = process.env.IPINFO_API_KEY || 'e84483c7e399ca';
 
 // Cache to avoid redundant API calls
