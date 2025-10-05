@@ -37,7 +37,6 @@ export default function LoginForm() {
 
       // Distinguish between user not found (suggest signup) and incorrect password
       if (status === 404 || /user not found/i.test(serverMsg)) {
-        setMessage('Account not found. Would you like to create one?');
         setShowSignupPrompt(true);
         setSignupPromptMsg('Account not found. Would you like to create one?');
       } else if (status === 401 && /incorrect password/i.test(serverMsg)) {
